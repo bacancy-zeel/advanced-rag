@@ -1,0 +1,14 @@
+# The RAG challenge: everything runs locally except the Gemini calls.
+# PDF parsing: text with fonts and positions, vector drawings, page renders.
+pymupdf==1.28.2
+# Vector store in local mode (a folder, no server): dense + sparse + RRF fusion.
+qdrant-client==1.20.0
+# BGE embeddings, BM25 sparse vectors and the MiniLM reranker, all ONNX on CPU.
+fastembed==0.8.0
+# Answers, and the one-time chart descriptions.
+google-genai==2.24.0
+python-dotenv==1.0.1
+# The local web page: `python -m advanced_rag serve`.
+fastapi==0.141.1
+uvicorn==0.53.0
+markdown==3.10.3

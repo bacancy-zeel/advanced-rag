@@ -1,0 +1,90 @@
+{
+  "retrieval": [
+    {
+      "variant": "naive: plain text, 1000-char chunks, dense",
+      "mrr": 0.733,
+      "hit": 0.9,
+      "ranks": [
+        1,
+        1,
+        0,
+        3,
+        1,
+        1,
+        1,
+        2,
+        1,
+        2
+      ]
+    },
+    {
+      "variant": "parsed + structure-aware chunks, dense",
+      "mrr": 0.8,
+      "hit": 1.0,
+      "ranks": [
+        1,
+        2,
+        1,
+        2,
+        1,
+        1,
+        2,
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "variant": "+ hybrid (dense + BM25, RRF)",
+      "mrr": 0.817,
+      "hit": 1.0,
+      "ranks": [
+        1,
+        1,
+        1,
+        3,
+        1,
+        1,
+        3,
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "variant": "+ cross-encoder rerank",
+      "mrr": 0.95,
+      "hit": 1.0,
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "variant": "advanced (shipped config)",
+      "mrr": 0.95,
+      "hit": 1.0,
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "answers": null
+}

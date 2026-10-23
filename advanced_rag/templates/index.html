@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advanced RAG Challenge</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6b66;
+    --line: #e2e2dc; --accent: #2f5bd3; --accent-text: #ffffff;
+    --chip: #eef1fb; --warn: #b4441c; --ok: #1f7a4d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161615; --panel: #1f1f1d; --text: #ececea; --muted: #a0a09a;
+      --line: #33332f; --accent: #7d9cf0; --accent-text: #10131c;
+      --chip: #262c3d; --warn: #f08c62; --ok: #6cc79a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161615; --panel: #1f1f1d; --text: #ececea; --muted: #a0a09a;
+    --line: #33332f; --accent: #7d9cf0; --accent-text: #10131c;
+    --chip: #262c3d; --warn: #f08c62; --ok: #6cc79a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.35rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab { border: 1px solid var(--line); background: var(--panel); color: var(--text);
+         padding: 8px 12px; border-radius: 8px; cursor: pointer; font: inherit; }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-text);
+                               border-color: var(--accent); }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  textarea { flex: 1 1 100%; min-height: 64px; resize: vertical; padding: 10px 12px;
+             border: 1px solid var(--line); border-radius: 8px; font: inherit;
+             background: var(--panel); color: var(--text); }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%; }
+  button.primary { background: var(--accent); color: var(--accent-text); border: 0;
+                   padding: 9px 18px; border-radius: 8px; font: inherit; cursor: pointer; }
+  button.primary:disabled { opacity: .6; cursor: wait; }
+  label.toggle { color: var(--muted); display: flex; gap: 6px; align-items: center; }
+  .examples { margin: 14px 0 22px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .examples button { background: var(--chip); color: var(--text); border: 0;
+                     border-radius: 999px; padding: 5px 11px; font: inherit;
+                     font-size: .85rem; cursor: pointer; text-align: left; }
+  .examples button.sample::before { content: "★ "; color: var(--accent); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px 18px; margin-bottom: 14px; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 8px; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px;
+           background: var(--chip); font-size: .78rem; margin-right: 6px; }
+  .answer p:first-child { margin-top: 0; }
+  .answer p:last-child { margin-bottom: 0; }
+  .error { color: var(--warn); }
+  details { border-top: 1px solid var(--line); padding: 8px 0; }
+  details:first-of-type { border-top: 0; }
+  summary { cursor: pointer; }
+  summary .h { color: var(--muted); font-size: .85rem; }
+  pre { white-space: pre-wrap; word-wrap: break-word; background: var(--bg);
+        padding: 10px 12px; border-radius: 8px; font-size: .83rem; margin: 8px 0 0;
+        max-height: 340px; overflow: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Advanced RAG challenge</h1>
+  <p class="sub">Ask one report at a time. Answers cite numbered sources; expand a source to read the passage the model saw.</p>
+
+  <div class="tabs" id="tabs" role="tablist"></div>
+
+  <form id="form">
+    <textarea id="q" placeholder="Ask a question about this report…" required></textarea>
+    <div class="row">
+      <button class="primary" id="go" type="submit">Ask</button>
+      <label class="toggle"><input type="checkbox" id="naive"> Naive baseline (plain text, fixed chunks, dense only)</label>
+    </div>
+  </form>
+
+  <div class="examples" id="examples"></div>
+  <div id="out"></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let docs = [], current = null;
+
+function esc(s) {
+  return s.replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+}
+
+function select(key) {
+  current = key;
+  for (const b of $("tabs").children) b.setAttribute("aria-selected", b.dataset.key === key);
+  const doc = docs.find(d => d.key === key);
+  $("examples").innerHTML = "";
+  for (const ex of doc.examples) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = ex.q;
+    if (ex.sample) { b.className = "sample"; b.title = "Sample question from the brief"; }
+    b.onclick = () => { $("q").value = ex.q; ask(); };
+    $("examples").appendChild(b);
+  }
+  try { localStorage.setItem("doc", key); } catch (e) {}
+}
+
+async function ask(event) {
+  if (event) event.preventDefault();
+  const question = $("q").value.trim();
+  if (!question) return;
+  $("go").disabled = true; $("go").textContent = "Thinking…";
+  try {
+    const res = await fetch("/api/ask", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({doc: current, question, naive: $("naive").checked}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    render(question, data);
+  } catch (err) {
+    $("out").insertAdjacentHTML("afterbegin",
+      `<div class="card"><div class="meta">${esc(question)}</div><div class="error">${esc(String(err.message || err))}</div></div>`);
+  } finally {
+    $("go").disabled = false; $("go").textContent = "Ask";
+  }
+}
+
+function render(question, data) {
+  const doc = docs.find(d => d.key === current);
+  const sources = data.sources.map(s => `
+    <details>
+      <summary>[${s.rank}] page ${s.page} <span class="badge">${esc(s.kind)}</span><span class="h">${esc(s.heading || "")}</span></summary>
+      <pre>${esc(s.text)}</pre>
+    </details>`).join("");
+  const filter = data.filter ? ` · filter: ${esc(data.filter)}` : "";
+  $("out").insertAdjacentHTML("afterbegin", `
+    <div class="card">
+      <div class="meta"><span class="badge">${esc(data.pipeline)}</span>${esc(doc.key.toUpperCase())}${filter}</div>
+      <div class="meta"><strong>${esc(question)}</strong></div>
+      <div class="answer">${data.answer_html}</div>
+    </div>
+    <div class="card"><div class="meta">Sources</div>${sources || "<em>none</em>"}</div>`);
+}
+
+async function init() {
+  docs = await (await fetch("/api/documents")).json();
+  for (const d of docs) {
+    const b = document.createElement("button");
+    b.className = "tab"; b.role = "tab"; b.dataset.key = d.key; b.textContent = d.title;
+    b.onclick = () => select(d.key);
+    $("tabs").appendChild(b);
+  }
+  let saved = null;
+  try { saved = localStorage.getItem("doc"); } catch (e) {}
+  select(docs.some(d => d.key === saved) ? saved : docs[0].key);
+  $("form").addEventListener("submit", ask);
+  $("q").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); }
+  });
+}
+init();
+</script>
+</body>
+</html>

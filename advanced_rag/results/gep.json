@@ -1,0 +1,131 @@
+{
+  "retrieval": [
+    {
+      "variant": "naive: plain text, 1000-char chunks, dense",
+      "mrr": 0.202,
+      "hit": 0.357,
+      "ranks": [
+        0,
+        1,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        1,
+        0,
+        0,
+        3,
+        0
+      ]
+    },
+    {
+      "variant": "parsed + structure-aware chunks, dense",
+      "mrr": 0.529,
+      "hit": 0.786,
+      "ranks": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        5,
+        5,
+        1,
+        1,
+        1,
+        1,
+        2,
+        4,
+        4
+      ]
+    },
+    {
+      "variant": "+ hybrid (dense + BM25, RRF)",
+      "mrr": 0.552,
+      "hit": 0.929,
+      "ranks": [
+        3,
+        5,
+        3,
+        1,
+        0,
+        5,
+        3,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        3
+      ]
+    },
+    {
+      "variant": "+ cross-encoder rerank",
+      "mrr": 0.792,
+      "hit": 1.0,
+      "ranks": [
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "variant": "+ metadata routing (region/chapter filter)",
+      "mrr": 0.827,
+      "hit": 1.0,
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        3,
+        4
+      ]
+    },
+    {
+      "variant": "advanced (shipped config)",
+      "mrr": 0.827,
+      "hit": 1.0,
+      "ranks": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        3,
+        4
+      ]
+    }
+  ],
+  "answers": null
+}

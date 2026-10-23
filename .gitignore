@@ -1,0 +1,22 @@
+# Virtualenvs
+.venv/
+venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Secrets: .env.example is the committed template
+.env
+
+# The source PDFs (from the challenge zip), the local Qdrant store and the
+# country map are all rebuilt by `python -m advanced_rag ingest all`.
+# The vision cache in advanced_rag/.cache/ IS committed: it cost API calls.
+advanced_rag/docs/*.pdf
+advanced_rag/.qdrant/
+advanced_rag/.cache/gep-countries.json
+
+# OS / editor cruft
+.DS_Store
+.vscode/
+.idea/
